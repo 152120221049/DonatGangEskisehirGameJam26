@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class PauseMenuManager : MonoBehaviour
 {
@@ -26,8 +27,8 @@ public class PauseMenuManager : MonoBehaviour
 
     private void Update()
     {
-        // Toggle pause with Escape key
-        if (Input.GetKeyDown(KeyCode.Escape))
+        // Toggle pause with Escape key using New Input System
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isPaused)
             {
