@@ -84,6 +84,10 @@ public class PlayerController : MonoBehaviour
     private float slowdownTimer;
     private float currentSlowdownMultiplier = 1f;
 
+    [Header("Look Settings")]
+    public float mouseSensitivity = 2f;
+    private float xRotation = 0f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -91,6 +95,9 @@ public class PlayerController : MonoBehaviour
         
         rb.freezeRotation = true;
         currentSpawnPoint = transform.position;
+
+        // Load sensitivity from settings
+        mouseSensitivity = PlayerPrefs.GetFloat("MouseSensitivity", mouseSensitivity);
 
         capsuleCollider.height = normalHeight;
         capsuleCollider.center = Vector3.zero;
@@ -104,11 +111,16 @@ public class PlayerController : MonoBehaviour
         {
             defaultCameraY = cameraTransform.localPosition.y;
         }
+
+        // Lock cursor by default during gameplay
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     void Update()
     {
         if (Keyboard.current == null || Mouse.current == null) return;
+        if (PauseMenuManager.isPaused) return;
 
         if (slowdownTimer > 0)
         {
@@ -120,8 +132,19 @@ public class PlayerController : MonoBehaviour
         {
             horizontalInput = 0f;
             verticalInput = 0f;
+            // Unlock cursor for board interaction
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
             return;
         }
+        else
+        {
+            // Lock cursor for gameplay
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
+        HandleLook();
 
         Vector2 moveInput = Vector2.zero;
         if (Keyboard.current.wKey.isPressed) moveInput.y += 1;
@@ -143,10 +166,34 @@ public class PlayerController : MonoBehaviour
         UpdateColliderHeight();
     }
 
+    private void HandleLook()
+    {
+        Vector2 lookInput = Mouse.current.delta.ReadValue() * mouseSensitivity * 0.1f;
+
+        // Horizontal rotation (Player Body)
+        transform.Rotate(Vector3.up * lookInput.x);
+
+        // Vertical rotation (Camera)
+        xRotation -= lookInput.y;
+        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+
+        if (cameraTransform != null)
+        {
+            cameraTransform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        }
+    }
+
     public void ApplySlowdown(float duration, float multiplier)
     {
         slowdownTimer = duration;
         currentSlowdownMultiplier = multiplier;
+    }
+
+    public void ApplyKnockback(Vector3 force)
+    {
+        // Cancel vertical velocity to ensure the jump force is consistent
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        rb.AddForce(force, ForceMode.Impulse);
     }
 
     void FixedUpdate()

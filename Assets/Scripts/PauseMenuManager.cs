@@ -1,0 +1,103 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PauseMenuManager : MonoBehaviour
+{
+    public static PauseMenuManager Instance { get; private set; }
+    public static bool isPaused = false;
+
+    [Header("UI Panels")]
+    public GameObject pauseMenuPanel;
+    public GameObject settingsPanel;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        
+        // If this script is on the Canvas or a child of it, 
+        // we should make the root Canvas persist
+        DontDestroyOnLoad(transform.root.gameObject);
+    }
+
+    private void Update()
+    {
+        // Toggle pause with Escape key
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (isPaused)
+            {
+                if (settingsPanel != null && settingsPanel.activeSelf)
+                {
+                    // If in settings, go back to pause menu
+                    CloseSettings();
+                }
+                else
+                {
+                    Resume();
+                }
+            }
+            else
+            {
+                Pause();
+            }
+        }
+    }
+
+    public void Resume()
+    {
+        pauseMenuPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        
+        Time.timeScale = 1f;
+        isPaused = false;
+
+        // Re-lock cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    public void Pause()
+    {
+        pauseMenuPanel.SetActive(true);
+        Time.timeScale = 0f;
+        isPaused = true;
+
+        // Unlock cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    public void OpenSettings()
+    {
+        pauseMenuPanel.SetActive(false);
+        settingsPanel.SetActive(true);
+    }
+
+    public void CloseSettings()
+    {
+        settingsPanel.SetActive(false);
+        pauseMenuPanel.SetActive(true);
+    }
+
+    public void LoadMainMenu()
+    {
+        Time.timeScale = 1f;
+        isPaused = false;
+        
+        // Destroy the persistent UI before going to main menu
+        // so it doesn't double up or conflict with the Main Menu UI
+        Destroy(transform.root.gameObject);
+        
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+}

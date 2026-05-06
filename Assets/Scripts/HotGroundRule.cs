@@ -4,6 +4,7 @@ public class HotGroundRule : GroundRule
 {
     [Header("Damage Settings")]
     public float damagePerSecond = 20f;
+    public float damageJumpForce = 4f;
 
     protected override void ApplyActiveState()
     {
@@ -19,13 +20,17 @@ public class HotGroundRule : GroundRule
 
     private void OnCollisionStay(Collision collision)
     {
-        // isRuleActive is managed by the base GroundRule class
         if (isRuleActive)
         {
             PlayerHealth health = collision.gameObject.GetComponent<PlayerHealth>();
             if (health != null)
             {
-                health.TakeDamage(damagePerSecond * Time.deltaTime);
+                if (health.TakeDamage(damagePerSecond * Time.deltaTime))
+                {
+                    // If damage was actually dealt (not invincible), make them jump a little
+                    PlayerController pc = collision.gameObject.GetComponent<PlayerController>();
+                    if (pc != null) pc.ApplyKnockback(Vector3.up * damageJumpForce);
+                }
             }
         }
     }
@@ -37,7 +42,11 @@ public class HotGroundRule : GroundRule
             PlayerHealth health = other.gameObject.GetComponent<PlayerHealth>();
             if (health != null)
             {
-                health.TakeDamage(damagePerSecond * Time.deltaTime);
+                if (health.TakeDamage(damagePerSecond * Time.deltaTime))
+                {
+                    PlayerController pc = other.gameObject.GetComponent<PlayerController>();
+                    if (pc != null) pc.ApplyKnockback(Vector3.up * damageJumpForce);
+                }
             }
         }
     }

@@ -32,9 +32,9 @@ public class PlayerHealth : MonoBehaviour
             invincibilityTimer -= Time.deltaTime;
     }
 
-    public void TakeDamage(float amount)
+    public bool TakeDamage(float amount)
     {
-        if (invincibilityTimer > 0 || currentHealth <= 0) return;
+        if (invincibilityTimer > 0 || currentHealth <= 0) return false;
 
         currentHealth -= amount;
         invincibilityTimer = invincibilityDuration;
@@ -53,6 +53,8 @@ public class PlayerHealth : MonoBehaviour
         {
             Die();
         }
+
+        return true;
     }
 
     public void Heal(float amount)
