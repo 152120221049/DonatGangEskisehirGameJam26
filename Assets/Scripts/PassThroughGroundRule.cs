@@ -3,48 +3,45 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class PassThroughGroundRule : GroundRule
 {
+    [Header("Visuals (Optional)")]
+    public Material solidVisual;
+    public Material passThroughVisual;
+
     private Collider col;
     private MeshRenderer meshRenderer;
 
-    [Tooltip("If true, the object will also become semi-transparent when the rule is erased.")]
-    public bool makeTransparent = true;
-    public Material transparentMaterial;
-    private Material originalMaterial;
-
-    private void Awake()
+    protected override void Start()
     {
         col = GetComponent<Collider>();
         meshRenderer = GetComponent<MeshRenderer>();
         
-        if (meshRenderer != null)
-        {
-            originalMaterial = meshRenderer.material;
-        }
+        // Ensure default RuleType is set if forgotten
+        if (ruleType == default) ruleType = RuleType.PassThrough;
 
-        UpdateState();
+        base.Start(); // Subscribes to RuleManager
     }
 
-    private void UpdateState()
+    protected override void ApplyActiveState()
     {
         if (col != null)
         {
-            // When rule is active, ground is solid (collider enabled). When erased, it is disabled so you fall through.
-            col.enabled = isRuleActive;
+            col.enabled = false; // Player passes through by default
         }
-
-        if (makeTransparent && meshRenderer != null && transparentMaterial != null)
+        if (meshRenderer != null && passThroughVisual != null)
         {
-            meshRenderer.material = isRuleActive ? originalMaterial : transparentMaterial;
+            meshRenderer.material = passThroughVisual;
         }
     }
 
-    protected override void OnRuleErased()
+    protected override void ApplyErasedState()
     {
-        UpdateState();
-    }
-
-    protected override void OnRuleRestored()
-    {
-        UpdateState();
+        if (col != null)
+        {
+            col.enabled = true; // Player can walk on it when rule is erased
+        }
+        if (meshRenderer != null && solidVisual != null)
+        {
+            meshRenderer.material = solidVisual;
+        }
     }
 }

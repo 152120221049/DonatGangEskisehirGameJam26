@@ -3,35 +3,49 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class IceGroundRule : GroundRule
 {
-    [Tooltip("The physics material when ice is active (slippery).")]
+    [Header("Ice Settings")]
     public PhysicsMaterial slipperyMaterial;
-    
-    [Tooltip("The physics material when ice is erased (normal friction).")]
     public PhysicsMaterial normalMaterial;
+    
+    // Optional: Visual change
+    public Material slipperyVisual;
+    public Material normalVisual;
 
     private Collider col;
+    private MeshRenderer meshRenderer;
 
-    private void Awake()
+    protected override void Start()
     {
         col = GetComponent<Collider>();
-        ApplyMaterial();
+        meshRenderer = GetComponent<MeshRenderer>();
+        
+        // Ensure default RuleType is set if forgotten
+        if (ruleType == default) ruleType = RuleType.IceFriction;
+
+        base.Start(); // Let the base class handle subscription and initial state
     }
 
-    private void ApplyMaterial()
+    protected override void ApplyActiveState()
     {
-        if (col != null)
+        if (col != null && slipperyMaterial != null)
         {
-            col.material = isRuleActive ? slipperyMaterial : normalMaterial;
+            col.sharedMaterial = slipperyMaterial;
+        }
+        if (meshRenderer != null && slipperyVisual != null)
+        {
+            meshRenderer.material = slipperyVisual;
         }
     }
 
-    protected override void OnRuleErased()
+    protected override void ApplyErasedState()
     {
-        ApplyMaterial();
-    }
-
-    protected override void OnRuleRestored()
-    {
-        ApplyMaterial();
+        if (col != null && normalMaterial != null)
+        {
+            col.sharedMaterial = normalMaterial;
+        }
+        if (meshRenderer != null && normalVisual != null)
+        {
+            meshRenderer.material = normalVisual;
+        }
     }
 }

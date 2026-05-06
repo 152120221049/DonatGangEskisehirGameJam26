@@ -2,30 +2,56 @@ using UnityEngine;
 
 public abstract class GroundRule : MonoBehaviour
 {
-    [Tooltip("If true, the rule is currently active.")]
-    public bool isRuleActive = true;
+    [Header("Rule Settings")]
+    public RuleType ruleType;
+    protected bool isRuleActive = true;
 
-    public virtual void EraseRule()
+    protected virtual void Start()
     {
-        if (!isRuleActive) return;
-        
-        isRuleActive = false;
-        OnRuleErased();
-        Debug.Log($"Rule erased for {gameObject.name}!");
+        // Subscribe to global rule changes
+        if (RuleManager.Instance != null)
+        {
+            RuleManager.Instance.OnRuleStateChanged += HandleRuleStateChanged;
+            
+            // Sync initial state just in case it was spawned late
+            if (RuleManager.Instance.IsRuleErased(ruleType))
+            {
+                ApplyErasedState();
+                isRuleActive = false;
+            }
+            else
+            {
+                ApplyActiveState();
+                isRuleActive = true;
+            }
+        }
     }
 
-    public virtual void RestoreRule()
+    protected virtual void OnDestroy()
     {
-        if (isRuleActive) return;
-        
-        isRuleActive = true;
-        OnRuleRestored();
-        Debug.Log($"Rule restored for {gameObject.name}!");
+        if (RuleManager.Instance != null)
+        {
+            RuleManager.Instance.OnRuleStateChanged -= HandleRuleStateChanged;
+        }
     }
 
-    // Called when the rule is removed (e.g. ice stops being slippery)
-    protected abstract void OnRuleErased();
+    private void HandleRuleStateChanged(RuleType changedRule, bool isErased)
+    {
+        if (changedRule == ruleType)
+        {
+            isRuleActive = !isErased;
+            if (isErased)
+            {
+                ApplyErasedState();
+            }
+            else
+            {
+                ApplyActiveState();
+            }
+        }
+    }
 
-    // Called when the rule is reapplied
-    protected abstract void OnRuleRestored();
+    // Children must implement what happens when the rule is active or erased
+    protected abstract void ApplyActiveState();
+    protected abstract void ApplyErasedState();
 }
