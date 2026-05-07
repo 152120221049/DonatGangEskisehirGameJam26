@@ -46,7 +46,8 @@ public class PlayerController : MonoBehaviour
     [Header("Item Holding (Rule Book)")]
     public Vector3 equipOffset = new Vector3(0.7f, -0.7f, 0.4f); // Tucked further right and back
     public Vector3 aimOffset = new Vector3(0f, -0.1f, 1.2f); // Further away and centered
-    public Vector3 bookRotationOffset = new Vector3(0, 0, 0); // Change to (0,180,0) if text is backwards
+    public Vector3 bookRotationOffset = new Vector3(0, 0, 0); 
+    public Vector3 readRotationOffset = new Vector3(90, 0, 0); // Customizable rotation for reading mode
     
     [Header("Book Idle Animation")]
     public Vector3 bookIdleTilt = new Vector3(0f, 90f, -20f); // Tucked but pointing outwards
@@ -99,6 +100,10 @@ public class PlayerController : MonoBehaviour
         // Load sensitivity from settings
         mouseSensitivity = PlayerPrefs.GetFloat("MouseSensitivity", mouseSensitivity);
 
+        // Safety: Ensure game is not paused when entering a new scene
+        Time.timeScale = 1f;
+        PauseMenuManager.isPaused = false;
+
         capsuleCollider.height = normalHeight;
         capsuleCollider.center = Vector3.zero;
 
@@ -119,7 +124,6 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (Keyboard.current == null || Mouse.current == null) return;
         if (PauseMenuManager.isPaused) return;
 
         if (slowdownTimer > 0)
@@ -128,53 +132,77 @@ public class PlayerController : MonoBehaviour
             if (slowdownTimer <= 0) currentSlowdownMultiplier = 1f;
         }
 
+        // Try to get New Input System devices
+        var keyboard = Keyboard.current ?? InputSystem.GetDevice<Keyboard>();
+        var mouse = Mouse.current ?? InputSystem.GetDevice<Mouse>();
+
+        Vector2 moveInput = Vector2.zero;
+        Vector2 lookDelta = Vector2.zero;
+
+        // --- NEW INPUT SYSTEM PATH ---
+        if (keyboard != null && mouse != null)
+        {
+            if (keyboard.wKey.isPressed) moveInput.y += 1;
+            if (keyboard.sKey.isPressed) moveInput.y -= 1;
+            if (keyboard.aKey.isPressed) moveInput.x -= 1;
+            if (keyboard.dKey.isPressed) moveInput.x += 1;
+
+            lookDelta = mouse.delta.ReadValue();
+            
+            // Call specific methods with new system
+            HandleJump(keyboard);
+            HandleSneak(keyboard);
+            HandleSlide(keyboard);
+            HandleInteraction(keyboard);
+            HandleHeldBook(mouse, keyboard);
+        }
+        // --- OLD INPUT SYSTEM FALLBACK ---
+        else
+        {
+            try 
+            {
+                moveInput.x = Input.GetAxisRaw("Horizontal");
+                moveInput.y = Input.GetAxisRaw("Vertical");
+                lookDelta = new Vector2(Input.GetAxisRaw("Mouse X") * 10f, Input.GetAxisRaw("Mouse Y") * 10f);
+
+                if (Input.GetButtonDown("Jump")) rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                // Simplified fallback for other actions...
+            }
+            catch { /* If in 'New Only' mode, this will fail silently */ }
+        }
+
         if (isInteractingWithBoard)
         {
+            if (showDebugLogs) Debug.Log("[PlayerController] Input blocked: Interacting with Board");
             horizontalInput = 0f;
             verticalInput = 0f;
-            // Unlock cursor for board interaction
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
         }
         else
         {
-            // Lock cursor for gameplay
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
-        HandleLook();
+        // Apply Look
+        HandleLookManual(lookDelta);
 
-        Vector2 moveInput = Vector2.zero;
-        if (Keyboard.current.wKey.isPressed) moveInput.y += 1;
-        if (Keyboard.current.sKey.isPressed) moveInput.y -= 1;
-        if (Keyboard.current.aKey.isPressed) moveInput.x -= 1;
-        if (Keyboard.current.dKey.isPressed) moveInput.x += 1;
-        
         horizontalInput = moveInput.x;
         verticalInput = moveInput.y;
 
         CheckGrounded();
-        HandleJump();
-        HandleSneak();
-        HandleSlide();
-        HandleInteraction();
-        HandleHeldBook();
         HandleHeadBob();
-        
         UpdateColliderHeight();
     }
 
-    private void HandleLook()
+    private void HandleLookManual(Vector2 delta)
     {
-        Vector2 lookInput = Mouse.current.delta.ReadValue() * mouseSensitivity * 0.1f;
+        float sensitivityMod = mouseSensitivity * 0.1f;
+        transform.Rotate(Vector3.up * delta.x * sensitivityMod);
 
-        // Horizontal rotation (Player Body)
-        transform.Rotate(Vector3.up * lookInput.x);
-
-        // Vertical rotation (Camera)
-        xRotation -= lookInput.y;
+        xRotation -= delta.y * sensitivityMod;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         if (cameraTransform != null)
@@ -307,9 +335,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleJump()
+    private void HandleJump(Keyboard keyboard)
     {
-        if (Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (keyboard.spaceKey.wasPressedThisFrame)
         {
             if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.CanJump))
             {
@@ -332,7 +360,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleSneak()
+    private void HandleSneak(Keyboard keyboard)
     {
         if (isSliding) return;
 
@@ -342,7 +370,7 @@ public class PlayerController : MonoBehaviour
             ruleAllowsCrouch = false;
         }
 
-        if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
+        if (keyboard.leftCtrlKey.wasPressedThisFrame)
         {
             if (ruleAllowsCrouch)
             {
@@ -350,7 +378,7 @@ public class PlayerController : MonoBehaviour
             }
         }
         
-        bool wantsToStopSneaking = !Keyboard.current.leftCtrlKey.isPressed;
+        bool wantsToStopSneaking = !keyboard.leftCtrlKey.isPressed;
         if (isSneaking && (wantsToStopSneaking || !ruleAllowsCrouch))
         {
             if (CanStandUp())
@@ -360,7 +388,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleSlide()
+    private void HandleSlide(Keyboard keyboard)
     {
         if (slideCooldownTimer > 0)
         {
@@ -373,7 +401,7 @@ public class PlayerController : MonoBehaviour
             if (slideTimer <= 0)
             {
                 isSliding = false;
-                if (Keyboard.current.leftCtrlKey.isPressed || !CanStandUp())
+                if (keyboard.leftCtrlKey.isPressed || !CanStandUp())
                 {
                     isSneaking = true;
                 }
@@ -383,7 +411,7 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-        else if (Keyboard.current.leftShiftKey.wasPressedThisFrame && isGrounded && slideCooldownTimer <= 0)
+        else if (keyboard.leftShiftKey.wasPressedThisFrame && isGrounded && slideCooldownTimer <= 0)
         {
             if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.CanSlide))
             {
@@ -419,9 +447,9 @@ public class PlayerController : MonoBehaviour
         return !Physics.SphereCast(headPosition, radius, Vector3.up, out RaycastHit hit, distanceToCheck, groundMask, QueryTriggerInteraction.Ignore);
     }
 
-    private void HandleInteraction()
+    private void HandleInteraction(Keyboard keyboard)
     {
-        if (Keyboard.current.eKey.wasPressedThisFrame)
+        if (keyboard.eKey.wasPressedThisFrame)
         {
             bool interacted = false;
             
@@ -456,18 +484,21 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleHeldBook()
+    private void HandleHeldBook(Mouse mouse, Keyboard keyboard)
     {
         if (heldBook == null) return;
 
-        // 1. Aiming / Reading the book
+        // 1. Aiming / Reading the book (Right click usually, but keeping previous logic)
         Vector3 targetLocalPosition = equipOffset;
         Vector3 targetRotationOffset = bookRotationOffset + bookIdleTilt;
 
-        if (Mouse.current.leftButton.isPressed)
+        // Using Right Click for Aiming as it's more standard, but user previously used Left Click for interaction
+        bool isAiming = mouse.rightButton.isPressed; 
+
+        if (isAiming)
         {
             targetLocalPosition = aimOffset;
-            targetRotationOffset = bookRotationOffset; // Straighten out to read
+            targetRotationOffset = readRotationOffset; // Use the specific reading rotation
         }
         else
         {
@@ -483,7 +514,7 @@ public class PlayerController : MonoBehaviour
         heldBook.transform.rotation = Quaternion.Lerp(heldBook.transform.rotation, targetWorldRotation, Time.deltaTime * aimTransitionSpeed);
 
         // 2. Left Click to Copy Rules from Board
-        if (Mouse.current.leftButton.wasPressedThisFrame)
+        if (mouse.leftButton.wasPressedThisFrame)
         {
             if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hitInfo, interactionRadius * 2f, interactableMask))
             {
@@ -497,9 +528,9 @@ public class PlayerController : MonoBehaviour
 
         // 3. Numbers 1-9 to erase rule AND throw the book
         var keys = new[] {
-            Keyboard.current.digit1Key, Keyboard.current.digit2Key, Keyboard.current.digit3Key,
-            Keyboard.current.digit4Key, Keyboard.current.digit5Key, Keyboard.current.digit6Key,
-            Keyboard.current.digit7Key, Keyboard.current.digit8Key, Keyboard.current.digit9Key
+            keyboard.digit1Key, keyboard.digit2Key, keyboard.digit3Key,
+            keyboard.digit4Key, keyboard.digit5Key, keyboard.digit6Key,
+            keyboard.digit7Key, keyboard.digit8Key, keyboard.digit9Key
         };
 
         for (int i = 0; i < keys.Length; i++)
@@ -516,9 +547,53 @@ public class PlayerController : MonoBehaviour
                     }
 
                     RuleBook bookToThrow = heldBook;
-                    heldBook = null; 
-                    bookToThrow.Throw(cameraTransform.forward);
-                    break; 
+                    heldBook = null;
+
+                    Transform camT = cameraTransform != null ? cameraTransform : Camera.main.transform;
+                    
+                    // 1. Raycast against EVERYTHING (~0) to ensure we hit walls, props, etc.
+                    // We ignore triggers and the Player layer (usually layer 3 or 6, but we'll use a mask)
+                    int layerMask = ~LayerMask.GetMask("Player", "Ignore Raycast"); 
+                    
+                    Vector3 targetPoint;
+                    Ray ray = new Ray(camT.position, camT.forward);
+                    
+                    if (Physics.Raycast(ray, out RaycastHit hit, 200f, layerMask, QueryTriggerInteraction.Ignore))
+                    {
+                        targetPoint = hit.point;
+                    }
+                    else
+                    {
+                        targetPoint = camT.position + camT.forward * 50f;
+                    }
+
+                    // 2. Calculate the spawn and direction
+                    Vector3 spawnPos = camT.TransformPoint(new Vector3(0f, 0f, 0.4f));
+                    bookToThrow.transform.position = spawnPos;
+                    bookToThrow.transform.rotation = camT.rotation;
+
+                    Vector3 throwDir = (targetPoint - spawnPos).normalized;
+
+                    // 3. EMERGENCY FIX: If the throw direction is pointing behind the player, flip it.
+                    if (Vector3.Dot(throwDir, camT.forward) < 0) 
+                    {
+                        throwDir = camT.forward;
+                        Debug.LogWarning("[Throw] Detected inverted camera! Reverting to raw forward.");
+                    }
+
+                    // VISUAL TARGET TEST: Spawn a temporary sphere where the book is aimed
+                    GameObject debugSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    debugSphere.transform.position = targetPoint;
+                    debugSphere.transform.localScale = Vector3.one * 0.1f;
+                    Destroy(debugSphere.GetComponent<Collider>()); // No physics on debug
+                    Destroy(debugSphere, 1f); // Disappear after 1s
+
+                    Debug.DrawLine(spawnPos, targetPoint, Color.red, 5f);
+                    Debug.Log($"[Throw] Hit: {(hit.collider != null ? hit.collider.name : "Sky")}. Target: {targetPoint}");
+
+                    bookToThrow.Throw(throwDir);
+                    
+                    break;
                 }
             }
         }
@@ -591,5 +666,36 @@ public class PlayerController : MonoBehaviour
             Gizmos.color = isGrounded ? (isOnSlipperySurface ? Color.cyan : Color.green) : Color.red;
             if (groundCheck != null) Gizmos.DrawWireSphere(groundCheck.position, groundDistance);
         }
+    }
+
+    private void OnGUI()
+    {
+        // Simple Crosshair
+        int size = 24; // Increased size for easier aiming
+        int thickness = 4; // Increased thickness
+        float xMin = (Screen.width / 2) - (size / 2);
+        float yMin = (Screen.height / 2) - (size / 2);
+
+        // Check if looking at something interactable to change crosshair color
+        Color crossColor = Color.white;
+        if (cameraTransform != null)
+        {
+            // Only turn yellow if within actual interaction range
+            if (Physics.Raycast(cameraTransform.position, cameraTransform.forward, out RaycastHit hit, interactionRadius, interactableMask))
+            {
+                // Only shine yellow if the object actually has an interaction script
+                if (hit.collider.GetComponent<IInteractable>() != null)
+                {
+                    crossColor = Color.yellow; 
+                }
+            }
+        }
+
+        GUI.color = crossColor;
+        // Draw horizontal line
+        GUI.DrawTexture(new Rect(xMin, (Screen.height / 2) - (thickness / 2), size, thickness), Texture2D.whiteTexture);
+        // Draw vertical line
+        GUI.DrawTexture(new Rect((Screen.width / 2) - (thickness / 2), yMin, thickness, size), Texture2D.whiteTexture);
+        GUI.color = Color.white;
     }
 }

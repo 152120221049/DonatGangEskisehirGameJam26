@@ -11,6 +11,18 @@ public class RuleBook : MonoBehaviour, IInteractable
     public float throwForce = 15f;
     public float lifeTimeAfterThrow = 5f;
     
+    [Header("Throw Visuals")]
+    public Vector3 throwRotationOffset = new Vector3(0, 0, 0); // Tweaked for the new model
+    public Vector3 spinAxis = Vector3.up;
+    public float spinSpeed = 720f;
+
+    [Header("Return Visuals")]
+    public float returnTime = 1.5f;
+    public float returnCurveHeight = 1.2f;
+    public float returnSideCurve = 1.0f;
+    public Vector3 returnSpinAxis = Vector3.forward;
+    public float returnSpinSpeed = 1080f;
+    
     [Header("Contained Rules")]
     public List<BoardRuleInfo> containedRules = new List<BoardRuleInfo>();
 
@@ -60,8 +72,17 @@ public class RuleBook : MonoBehaviour, IInteractable
         }
     }
 
+    private Coroutine destroyCoroutine;
+
     public void OnPickedUp(Transform equipParent)
     {
+        // Cancel the self-destruct timer if caught!
+        if (destroyCoroutine != null)
+        {
+            StopCoroutine(destroyCoroutine);
+            destroyCoroutine = null;
+        }
+
         isHeld = true;
         isThrown = false;
         isReturning = false;
@@ -86,28 +107,104 @@ public class RuleBook : MonoBehaviour, IInteractable
         transform.SetParent(null);
         
         rb.isKinematic = false;
+        rb.useGravity = true; // Make sure gravity is on when dropped
         col.enabled = true;
         col.isTrigger = false;
         
         rb.linearVelocity = Vector3.zero;
     }
 
+    private Coroutine spinCoroutine;
+
+    private Vector3 flightDirection;
+    private bool isSpinning = false;
+
+    void Update()
+    {
+        // Visual frisbee spin in Update - completely separate from physics
+        if (isSpinning)
+            transform.Rotate(spinAxis, spinSpeed * Time.deltaTime, Space.Self);
+    }
+
     public void Throw(Vector3 direction)
     {
         isHeld = false;
         isThrown = true;
+        isSpinning = true;
+        flightDirection = direction;
         
         transform.SetParent(null);
+        transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        
         rb.isKinematic = false;
+        rb.useGravity = false;
+        
+        // Reset all physics states
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.ResetCenterOfMass();
+        rb.ResetInertiaTensor();
+        
+        rb.constraints = RigidbodyConstraints.FreezeRotation; 
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        // Trajectory lock and orientation
+        transform.rotation = Quaternion.LookRotation(direction) * Quaternion.Euler(throwRotationOffset);
+
         col.enabled = true;
         col.isTrigger = false;
-        
-        rb.linearVelocity = direction * throwForce;
 
-        // The book will now only return if it hits a RuleBoard or Button 
-        // that triggers its TriggerReturn() method.
-        // If it doesn't hit anything, it destroys itself after the lifetime.
-        Destroy(gameObject, lifeTimeAfterThrow);
+        // Ignore player colliders
+        PlayerController pc = FindFirstObjectByType<PlayerController>();
+        if (pc != null)
+        {
+            Collider[] playerCols = pc.GetComponentsInChildren<Collider>();
+            foreach (Collider pCol in playerCols)
+                if (pCol != null && pCol != col) Physics.IgnoreCollision(col, pCol, true);
+        }
+
+        // TRAJECTORY LOCK: Force the velocity every frame for 0.1s to overpower deflections
+        StartCoroutine(TrajectoryLock(direction));
+        StartCoroutine(TemporaryCollisionSafety());
+        
+        if (destroyCoroutine != null) StopCoroutine(destroyCoroutine);
+        destroyCoroutine = StartCoroutine(DestroyAfterDelay(lifeTimeAfterThrow));
+    }
+
+    private System.Collections.IEnumerator TrajectoryLock(Vector3 dir)
+    {
+        float elapsed = 0;
+        while (elapsed < 0.1f)
+        {
+            if (rb != null) rb.linearVelocity = dir * throwForce;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    private System.Collections.IEnumerator TemporaryCollisionSafety()
+    {
+        // This prevents the book from exploding into the stratosphere 
+        // if it clips the floor or player for a microsecond on spawn.
+        Physics.IgnoreLayerCollision(gameObject.layer, gameObject.layer, true); 
+        // Wait 0.1s
+        yield return new WaitForSeconds(0.1f);
+        Physics.IgnoreLayerCollision(gameObject.layer, gameObject.layer, false);
+    }
+
+    private System.Collections.IEnumerator DestroyAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Destroy(gameObject);
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (!isThrown || isReturning) return;
+        // Stop spinning, restore full physics, re-enable gravity so it tumbles naturally
+        isSpinning = false;
+        rb.constraints = RigidbodyConstraints.None;
+        rb.useGravity = true;
     }
 
     public void TriggerReturn()
@@ -132,18 +229,18 @@ public class RuleBook : MonoBehaviour, IInteractable
         if (player == null) yield break;
 
         Vector3 startPos = transform.position;
-        float returnSpeed = 15f;
-        float curveHeight = Random.Range(0.8f, 1.5f); // Smaller, randomized height
-        float sideCurve = Random.Range(-1.5f, 1.5f);   // Randomized horizontal arch
-        float journeyTime = Vector3.Distance(startPos, player.transform.position) / returnSpeed;
+        
+        // Use inspector-exposed settings
         float startTime = Time.time;
+        float curveHeight = Random.Range(returnCurveHeight * 0.5f, returnCurveHeight);
+        float sideCurve = Random.Range(-returnSideCurve, returnSideCurve);
 
         while (true)
         {
             float dist = Vector3.Distance(transform.position, player.transform.position);
             if (dist < 1.5f) break;
 
-            float fraction = (Time.time - startTime) / journeyTime;
+            float fraction = (Time.time - startTime) / returnTime;
             if (fraction > 1f) fraction = 1f;
 
             Vector3 currentTarget = Vector3.Lerp(startPos, player.transform.position + Vector3.up, fraction);
@@ -158,7 +255,7 @@ public class RuleBook : MonoBehaviour, IInteractable
 
             transform.position = currentTarget + verticalOffset + horizontalOffset;
             
-            transform.Rotate(Vector3.forward, 1080f * Time.deltaTime);
+            transform.Rotate(returnSpinAxis, returnSpinSpeed * Time.deltaTime);
             
             yield return null;
         }
