@@ -2,21 +2,37 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[Serializable]
+public class RuleDescriptionEntry
+{
+    public RuleType type;
+    [TextArea(2, 5)]
+    public string description;
+}
+
 public class RuleManager : MonoBehaviour
 {
     public static RuleManager Instance { get; private set; }
 
-    // Central repository for rule descriptions
-    public static readonly Dictionary<RuleType, string> RuleDescriptions = new Dictionary<RuleType, string>
+    [Header("Rule Text Settings")]
+    public List<RuleDescriptionEntry> ruleDescriptions = new List<RuleDescriptionEntry>()
     {
-        { RuleType.PassThrough, "Mavi renkli yerlerin içinden geçilir" },
-        { RuleType.CanJump, "Karakter zıplayabilir" },
-        { RuleType.CanCrouch, "Karakter eğilebilir" },
-        { RuleType.CanSlide, "Karakter kayabilir" },
-        { RuleType.BookReturn, "Atılan kitap geri döner" },
-        { RuleType.HotGround, "Kırmızı zemin can yakar" },
-        { RuleType.InvisibleGround, "Zemin görünmezdir" }
+        new RuleDescriptionEntry { type = RuleType.IceFriction, description = "Zemin buz gibi kaygandır" },
+        new RuleDescriptionEntry { type = RuleType.PassThrough, description = "Mavi renkli yerlerin içinden geçilir" },
+        new RuleDescriptionEntry { type = RuleType.CanJump, description = "Karakter zıplayabilir" },
+        new RuleDescriptionEntry { type = RuleType.CanCrouch, description = "Karakter eğilebilir" },
+        new RuleDescriptionEntry { type = RuleType.CanSlide, description = "Karakter kayabilir" },
+        new RuleDescriptionEntry { type = RuleType.BookReturn, description = "Atılan kitap geri döner" },
+        new RuleDescriptionEntry { type = RuleType.HotGround, description = "Kırmızı zemin can yakar" },
+        new RuleDescriptionEntry { type = RuleType.InvisibleGround, description = "Zemin görünmezdir" }
     };
+
+    // Helper to get description at runtime
+    public string GetDescription(RuleType type)
+    {
+        var entry = ruleDescriptions.Find(e => e.type == type);
+        return entry != null ? entry.description : "No description found.";
+    }
 
     private HashSet<RuleType> erasedRules = new HashSet<RuleType>();
 

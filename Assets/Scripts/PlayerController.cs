@@ -11,19 +11,14 @@ public class PlayerController : MonoBehaviour
     public float slideBoostSpeed = 10f;
     public float jumpForce = 5f;
     
+    [Header("Gravity Settings")]
+    public float customGravity = -20f; // Stronger default gravity for snappier movement
+    
     [Header("Slippery Settings")]
     public float acceleration = 10f;
     public float slipperyAcceleration = 2f;
     public float deceleration = 10f;
     public float slipperyDeceleration = 0.5f;
-
-    [Header("Slide Settings")]
-    public float slideDuration = 0.5f;
-    public float slideCooldown = 1f;
-    private float slideTimer;
-    private float slideCooldownTimer;
-    private bool isSliding;
-    private Vector3 slideDirection;
 
     [Header("Sneak Settings")]
     public float normalHeight = 2f;
@@ -95,6 +90,7 @@ public class PlayerController : MonoBehaviour
         capsuleCollider = GetComponent<CapsuleCollider>();
         
         rb.freezeRotation = true;
+        rb.useGravity = false; // Using our custom gravity instead
         currentSpawnPoint = transform.position;
 
         // Load sensitivity from settings
@@ -152,7 +148,6 @@ public class PlayerController : MonoBehaviour
             // Call specific methods with new system
             HandleJump(keyboard);
             HandleSneak(keyboard);
-            HandleSlide(keyboard);
             HandleInteraction(keyboard);
             HandleHeldBook(mouse, keyboard);
         }
@@ -229,6 +224,8 @@ public class PlayerController : MonoBehaviour
         if (!isInteractingWithBoard)
         {
             MovePlayer();
+            // Apply custom gravity every physics frame
+            rb.AddForce(Vector3.up * customGravity, ForceMode.Acceleration);
         }
         else
         {
@@ -243,8 +240,8 @@ public class PlayerController : MonoBehaviour
         // Calculate horizontal speed to determine if we are moving
         float speed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
 
-        // Only bob when moving on the ground, not sliding, and not interacting with a board
-        if (isGrounded && speed > 0.1f && !isSliding && !isOnSlipperySurface)
+        // Only bob when moving on the ground and not interacting with a board
+        if (isGrounded && speed > 0.1f && !isOnSlipperySurface)
         {
             // Increase frequency slightly when sneaking so the steps feel quicker
             float currentFreq = isSneaking ? headBobFrequency * 1.5f : headBobFrequency;
@@ -294,13 +291,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 moveDirection = (transform.right * horizontalInput + transform.forward * verticalInput).normalized;
 
-        if (isSliding)
-        {
-            Vector3 targetVelocity = slideDirection * slideBoostSpeed;
-            targetVelocity.y = rb.linearVelocity.y;
-            rb.linearVelocity = targetVelocity;
-        }
-        else if (isOnSlipperySurface)
+        if (isOnSlipperySurface)
         {
             Vector3 currentVelocity = rb.linearVelocity;
             Vector3 currentHorizontalVel = new Vector3(currentVelocity.x, 0, currentVelocity.z);
@@ -345,7 +336,7 @@ public class PlayerController : MonoBehaviour
             }
 
             if (!isGrounded) return;
-            if (isSliding) return;
+            if (isOnSlipperySurface) return; // Can't jump on ice!
             
             if (CanStandUp())
             {
@@ -362,7 +353,6 @@ public class PlayerController : MonoBehaviour
 
     private void HandleSneak(Keyboard keyboard)
     {
-        if (isSliding) return;
 
         bool ruleAllowsCrouch = true;
         if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.CanCrouch))
@@ -388,48 +378,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleSlide(Keyboard keyboard)
-    {
-        if (slideCooldownTimer > 0)
-        {
-            slideCooldownTimer -= Time.deltaTime;
-        }
 
-        if (isSliding)
-        {
-            slideTimer -= Time.deltaTime;
-            if (slideTimer <= 0)
-            {
-                isSliding = false;
-                if (keyboard.leftCtrlKey.isPressed || !CanStandUp())
-                {
-                    isSneaking = true;
-                }
-                else
-                {
-                    isSneaking = false;
-                }
-            }
-        }
-        else if (keyboard.leftShiftKey.wasPressedThisFrame && isGrounded && slideCooldownTimer <= 0)
-        {
-            if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.CanSlide))
-            {
-                return;
-            }
-
-            isSliding = true;
-            slideTimer = slideDuration;
-            slideCooldownTimer = slideCooldown;
-            
-            slideDirection = (transform.right * horizontalInput + transform.forward * verticalInput).normalized;
-            if (slideDirection == Vector3.zero) slideDirection = transform.forward;
-        }
-    }
 
     private void UpdateColliderHeight()
     {
-        float targetHeight = (isSneaking || isSliding) ? sneakHeight : normalHeight;
+        float targetHeight = isSneaking ? sneakHeight : normalHeight;
         capsuleCollider.height = Mathf.Lerp(capsuleCollider.height, targetHeight, Time.deltaTime * crouchTransitionSpeed);
         
         float newCenterY = (capsuleCollider.height - normalHeight) / 2f;

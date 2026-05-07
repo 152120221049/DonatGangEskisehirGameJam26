@@ -390,8 +390,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textDisplay: {fileID: 4714163072483034908}
-  throwForce: 15
+  throwForce: 24
   lifeTimeAfterThrow: 5
+  throwRotationOffset: {x: 0, y: 0, z: -40}
+  spinAxis: {x: 0, y: 1, z: 0}
+  spinSpeed: 720
+  returnTime: 1.5
+  returnCurveHeight: 3
+  returnSideCurve: 2
+  returnRotationOffset: {x: 0, y: 0, z: 40}
+  returnSpinAxis: {x: 0, y: 1, z: 0}
+  returnSpinSpeed: 1080
   containedRules:
   - ruleType: 0
     ruleDescription: "Mavi renkli yerde kayars\u0131n"

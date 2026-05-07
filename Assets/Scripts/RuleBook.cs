@@ -8,7 +8,7 @@ public class RuleBook : MonoBehaviour, IInteractable
 {
     [Header("Book Settings")]
     public TMP_Text textDisplay;
-    public float throwForce = 15f;
+    public float throwForce = 24f; // Increased by 60% (from 15)
     public float lifeTimeAfterThrow = 5f;
     
     [Header("Throw Visuals")]
@@ -18,9 +18,10 @@ public class RuleBook : MonoBehaviour, IInteractable
 
     [Header("Return Visuals")]
     public float returnTime = 1.5f;
-    public float returnCurveHeight = 1.2f;
-    public float returnSideCurve = 1.0f;
-    public Vector3 returnSpinAxis = Vector3.forward;
+    public float returnCurveHeight = 2.5f; // Increased for more dramatic arc
+    public float returnSideCurve = 2.0f;  // Increased for more dramatic swerve
+    public Vector3 returnRotationOffset = new Vector3(0, 0, 0); // New: Separate offset for the return flight
+    public Vector3 returnSpinAxis = new Vector3(1, 0, 0); // Battle Axe Flip (X-axis)
     public float returnSpinSpeed = 1080f;
     
     [Header("Contained Rules")]
@@ -230,6 +231,10 @@ public class RuleBook : MonoBehaviour, IInteractable
 
         Vector3 startPos = transform.position;
         
+        // Match the "Return" orientation for the flight back
+        Vector3 dirToPlayer = (player.transform.position - transform.position).normalized;
+        transform.rotation = Quaternion.LookRotation(dirToPlayer) * Quaternion.Euler(returnRotationOffset);
+
         // Use inspector-exposed settings
         float startTime = Time.time;
         float curveHeight = Random.Range(returnCurveHeight * 0.5f, returnCurveHeight);
@@ -248,14 +253,15 @@ public class RuleBook : MonoBehaviour, IInteractable
             // Arch upwards
             Vector3 verticalOffset = Vector3.up * Mathf.Sin(fraction * Mathf.PI) * curveHeight;
             
-            // Arch to the side (relative to player-book direction)
+            // Arch to the side
             Vector3 directionToPlayer = (player.transform.position - startPos).normalized;
             Vector3 sideDir = Vector3.Cross(directionToPlayer, Vector3.up).normalized;
             Vector3 horizontalOffset = sideDir * Mathf.Sin(fraction * Mathf.PI) * sideCurve;
 
             transform.position = currentTarget + verticalOffset + horizontalOffset;
             
-            transform.Rotate(returnSpinAxis, returnSpinSpeed * Time.deltaTime);
+            // BATTLE AXE SPIN: Use Local Space (Space.Self) so it flips head-over-heels
+            transform.Rotate(returnSpinAxis, returnSpinSpeed * Time.deltaTime, Space.Self);
             
             yield return null;
         }
@@ -319,9 +325,9 @@ public class RuleBook : MonoBehaviour, IInteractable
 
             // Get description from central manager
             string ruleText = "Unknown Rule";
-            if (RuleManager.RuleDescriptions.ContainsKey(type))
+            if (RuleManager.Instance != null)
             {
-                ruleText = RuleManager.RuleDescriptions[type];
+                ruleText = RuleManager.Instance.GetDescription(type);
             }
 
             if (isErased)

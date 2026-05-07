@@ -18,14 +18,10 @@ public class BookThrower : MonoBehaviour
 
         if (hitBook != null)
         {
-            // Scenario: BookReturn rule is ERASED
             if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.BookReturn))
             {
-                Debug.Log("[BookThrower] Rule Erased! Swapping book for a returning dispenser book.");
-                Destroy(hitBook.gameObject);
-                
-                RuleBook newBook = Instantiate(bookPrefab, spawnPoint.position, spawnPoint.rotation);
-                newBook.TriggerReturn(); // Make the NEW book fly to the player
+                Debug.Log("[BookThrower] Rule Erased! Book will NOT return.");
+                // We do nothing. The book stays where it is because the return rule is disabled.
             }
             else
             {
