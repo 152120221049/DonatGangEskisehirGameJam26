@@ -17,12 +17,23 @@ public class PlayerHealth : MonoBehaviour
     public UnityEvent<float> OnHealthChanged;
     public UnityEvent OnDeath;
 
+    [Header("Audio")]
+    public AudioSource healthAudioSource;
+    public AudioClip damageClip;
+    public AudioClip agonyClip;
+    public AudioClip deathClip;
+    
     private PlayerController playerController;
+    private float agonyTimer;
 
     private void Start()
     {
         currentHealth = maxHealth;
         playerController = GetComponent<PlayerController>();
+        
+        if (healthAudioSource == null) healthAudioSource = GetComponent<AudioSource>();
+        if (healthAudioSource == null) healthAudioSource = gameObject.AddComponent<AudioSource>();
+        
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
@@ -30,6 +41,17 @@ public class PlayerHealth : MonoBehaviour
     {
         if (invincibilityTimer > 0)
             invincibilityTimer -= Time.deltaTime;
+
+        // Agony sound when low health
+        if (currentHealth > 0 && currentHealth < maxHealth * 0.3f)
+        {
+            agonyTimer -= Time.deltaTime;
+            if (agonyTimer <= 0)
+            {
+                if (agonyClip != null) healthAudioSource.PlayOneShot(agonyClip, 0.6f);
+                agonyTimer = 2.5f; // Play every 2.5s
+            }
+        }
     }
 
     public bool TakeDamage(float amount)
@@ -41,6 +63,8 @@ public class PlayerHealth : MonoBehaviour
 
         Debug.Log($"[PlayerHealth] Took damage: {amount}. Current health: {currentHealth}");
         
+        if (damageClip != null) healthAudioSource.PlayOneShot(damageClip, 0.5f);
+
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
         // Slow down the player
@@ -66,6 +90,8 @@ public class PlayerHealth : MonoBehaviour
     private void Die()
     {
         Debug.Log("[PlayerHealth] Player Died!");
+        if (deathClip != null) healthAudioSource.PlayOneShot(deathClip, 0.8f);
+
         OnDeath?.Invoke();
         if (playerController != null)
         {

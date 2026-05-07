@@ -56,6 +56,13 @@ public class PlayerController : MonoBehaviour
     private float headBobTimer;
     private float defaultCameraY;
     
+    [Header("Fall & Death Effects")]
+    public float fallImpactDipAmount = 0.3f;
+    public float fallImpactThreshold = 8f;
+    public float deathTiltDuration = 1.5f;
+    private float maxFallVelocity;
+    private bool isDead;
+    
     public float aimTransitionSpeed = 10f;
     public RuleBook heldBook;
     
@@ -64,6 +71,15 @@ public class PlayerController : MonoBehaviour
 
     [Header("Debug")]
     public bool showDebugLogs = true;
+
+    [Header("Audio")]
+    public AudioSource playerAudioSource;
+    public AudioClip footstepClip;
+    public AudioClip jumpClip;
+    public AudioClip landClip;
+    public float footstepRate = 0.5f;
+    private float footstepTimer;
+    private bool wasGroundedLastFrame;
 
     // Components
     private Rigidbody rb;
@@ -93,6 +109,11 @@ public class PlayerController : MonoBehaviour
         rb.useGravity = false; // Using our custom gravity instead
         currentSpawnPoint = transform.position;
 
+        if (playerAudioSource == null) playerAudioSource = GetComponent<AudioSource>();
+        if (playerAudioSource == null) playerAudioSource = gameObject.AddComponent<AudioSource>();
+        
+        wasGroundedLastFrame = isGrounded;
+
         // Load sensitivity from settings
         mouseSensitivity = PlayerPrefs.GetFloat("MouseSensitivity", mouseSensitivity);
 
@@ -121,6 +142,9 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         if (PauseMenuManager.isPaused) return;
+        if (isDead) return; // Block input while "dying"
+
+        CheckGrounded();
 
         if (slowdownTimer > 0)
         {
@@ -224,13 +248,32 @@ public class PlayerController : MonoBehaviour
         if (!isInteractingWithBoard)
         {
             MovePlayer();
-            // Apply custom gravity every physics frame
-            rb.AddForce(Vector3.up * customGravity, ForceMode.Acceleration);
+
+            // Landing sound
+            if (isGrounded && !wasGroundedLastFrame)
+            {
+                if (landClip != null) playerAudioSource.PlayOneShot(landClip, 0.5f);
+            }
+
+            // Footstep logic
+            float horizontalSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
+            if (isGrounded && horizontalSpeed > 0.5f && !isOnSlipperySurface)
+            {
+                footstepTimer -= Time.fixedDeltaTime * (horizontalSpeed / walkSpeed);
+                if (footstepTimer <= 0)
+                {
+                    if (footstepClip != null) playerAudioSource.PlayOneShot(footstepClip, 0.3f);
+                    footstepTimer = footstepRate;
+                }
+            }
         }
         else
         {
             rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         }
+
+        // Apply custom gravity EVERY frame to prevent floating/rising bugs
+        rb.AddForce(Vector3.up * customGravity, ForceMode.Acceleration);
     }
 
     private void HandleHeadBob()
@@ -261,6 +304,7 @@ public class PlayerController : MonoBehaviour
 
     private void CheckGrounded()
     {
+        wasGroundedLastFrame = isGrounded;
         if (groundCheck != null)
         {
             isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask, QueryTriggerInteraction.Ignore);
@@ -282,6 +326,36 @@ public class PlayerController : MonoBehaviour
             isGrounded = Physics.CheckSphere(spherePos, capsuleCollider.radius, groundMask, QueryTriggerInteraction.Ignore);
             isOnSlipperySurface = false;
         }
+
+        // --- NEW: Fall Impact Detection ---
+        if (!isGrounded)
+        {
+            // Record the highest downward speed during the fall
+            if (rb.linearVelocity.y < maxFallVelocity) maxFallVelocity = rb.linearVelocity.y;
+        }
+        else if (isGrounded && !wasGroundedLastFrame)
+        {
+            // Just landed. If we were falling fast enough, dip the camera
+            if (Mathf.Abs(maxFallVelocity) > fallImpactThreshold)
+            {
+                StartCoroutine(FallImpactEffect());
+            }
+            maxFallVelocity = 0;
+        }
+    }
+
+    private System.Collections.IEnumerator FallImpactEffect()
+    {
+        float elapsed = 0;
+        float duration = 0.3f;
+        while (elapsed < duration)
+        {
+            float dip = Mathf.Sin((elapsed / duration) * Mathf.PI) * fallImpactDipAmount;
+            cameraTransform.localPosition = new Vector3(cameraTransform.localPosition.x, defaultCameraY - dip, cameraTransform.localPosition.z);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        cameraTransform.localPosition = new Vector3(cameraTransform.localPosition.x, defaultCameraY, cameraTransform.localPosition.z);
     }
 
     private void MovePlayer()
@@ -342,6 +416,8 @@ public class PlayerController : MonoBehaviour
             {
                 rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                
+                if (jumpClip != null) playerAudioSource.PlayOneShot(jumpClip, 0.6f);
                 
                 if (isSneaking && !Keyboard.current.leftCtrlKey.isPressed)
                 {
@@ -557,7 +633,7 @@ public class PlayerController : MonoBehaviour
         if (heldBook != null) DropBook();
         
         heldBook = book;
-        heldBook.OnPickedUp(cameraTransform);
+        heldBook.OnPickedUp(cameraTransform, wasReturned);
 
         if (wasReturned)
         {
@@ -603,10 +679,44 @@ public class PlayerController : MonoBehaviour
         currentSpawnPoint = spawnPosition;
     }
 
-    public void Die()
+    public void Die(bool instant = false)
     {
+        if (isDead) return;
+        if (instant)
+        {
+            // Just respawn immediately for kill zones
+            rb.linearVelocity = Vector3.zero;
+            transform.position = currentSpawnPoint;
+        }
+        else
+        {
+            StartCoroutine(DeathSequence());
+        }
+    }
+
+    private System.Collections.IEnumerator DeathSequence()
+    {
+        isDead = true;
+        float elapsed = 0;
+        float duration = deathTiltDuration;
+        
+        Quaternion startRot = transform.rotation;
+        Quaternion endRot = startRot * Quaternion.Euler(0, 0, 70f); // Tilt 70 degrees on Z
+
+        while (elapsed < duration)
+        {
+            transform.rotation = Quaternion.Slerp(startRot, endRot, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(0.5f);
+
+        // Respawn
         rb.linearVelocity = Vector3.zero;
         transform.position = currentSpawnPoint;
+        transform.rotation = startRot; // Reset rotation
+        isDead = false;
     }
 
     private void OnDrawGizmosSelected()
@@ -630,7 +740,7 @@ public class PlayerController : MonoBehaviour
         float yMin = (Screen.height / 2) - (size / 2);
 
         // Check if looking at something interactable to change crosshair color
-        Color crossColor = Color.white;
+        bool isInteractable = false;
         if (cameraTransform != null)
         {
             // Only turn yellow if within actual interaction range
@@ -639,16 +749,44 @@ public class PlayerController : MonoBehaviour
                 // Only shine yellow if the object actually has an interaction script
                 if (hit.collider.GetComponent<IInteractable>() != null)
                 {
-                    crossColor = Color.yellow; 
+                    isInteractable = true; 
                 }
             }
         }
 
-        GUI.color = crossColor;
-        // Draw horizontal line
+        GUI.color = Color.white;
+        
+        // Draw Outlined Crosshair
+        // Draw black background (outline)
+        GUI.color = Color.black;
+        GUI.DrawTexture(new Rect(xMin - 1, (Screen.height / 2) - (thickness / 2) - 1, size + 2, thickness + 2), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect((Screen.width / 2) - (thickness / 2) - 1, yMin - 1, thickness + 2, size + 2), Texture2D.whiteTexture);
+        
+        // Draw white foreground
+        GUI.color = Color.white;
         GUI.DrawTexture(new Rect(xMin, (Screen.height / 2) - (thickness / 2), size, thickness), Texture2D.whiteTexture);
-        // Draw vertical line
         GUI.DrawTexture(new Rect((Screen.width / 2) - (thickness / 2), yMin, thickness, size), Texture2D.whiteTexture);
+        
+        // Show Interaction Text with Shadow/Outline
+        if (isInteractable)
+        {
+            GUIStyle style = new GUIStyle(GUI.skin.label);
+            style.alignment = TextAnchor.MiddleCenter;
+            style.fontStyle = FontStyle.Bold;
+            style.fontSize = 20;
+            
+            Rect labelRect = new Rect(Screen.width / 2 + 30, Screen.height / 2 - 25, 300, 50);
+            
+            // Draw Black Outline
+            style.normal.textColor = Color.black;
+            GUI.Label(new Rect(labelRect.x + 2, labelRect.y + 2, labelRect.width, labelRect.height), "E ile etkileşime geç", style);
+            GUI.Label(new Rect(labelRect.x - 2, labelRect.y - 2, labelRect.width, labelRect.height), "E ile etkileşime geç", style);
+            
+            // Draw White Text
+            style.normal.textColor = Color.white;
+            GUI.Label(labelRect, "E ile etkileşime geç", style);
+        }
+
         GUI.color = Color.white;
     }
 }

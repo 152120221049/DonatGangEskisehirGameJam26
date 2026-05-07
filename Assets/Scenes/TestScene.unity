@@ -781,6 +781,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1943179488 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8280976889432214889, guid: 6bf4b7c033f842c4090f8a90f764daa8, type: 3}
+  m_PrefabInstance: {fileID: 8311397880455384238}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1943179494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1943179488}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eac3c448bdee65642be6421684e69578, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ruleType: 6
+  damagePerSecond: 3500
+  damageJumpForce: 4
 --- !u!1001 &2015022200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -970,15 +990,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 676184870682219536, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 676184870682219536, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.11
+      value: 10.24
       objectReference: {fileID: 0}
     - target: {fileID: 676184870682219536, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 6.89
+      value: 18.3
       objectReference: {fileID: 0}
     - target: {fileID: 676184870682219536, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1024,6 +1044,10 @@ PrefabInstance:
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 1839795559}
+    - target: {fileID: 7306219018652774201, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
+      propertyPath: aimTransitionSpeed
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 7306219018652774201, guid: 09bd5437aa95d1847893c651c0b9fa24, type: 3}
       propertyPath: readRotationOffset.x
       value: 270
@@ -1318,10 +1342,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: IceGround
       objectReference: {fileID: 0}
+    - target: {fileID: 8910120813662200934, guid: 6bf4b7c033f842c4090f8a90f764daa8, type: 3}
+      propertyPath: ruleType
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8910120813662200934, guid: 6bf4b7c033f842c4090f8a90f764daa8, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8280976889432214889, guid: 6bf4b7c033f842c4090f8a90f764daa8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1943179494}
   m_SourcePrefab: {fileID: 100100000, guid: 6bf4b7c033f842c4090f8a90f764daa8, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -23,6 +23,16 @@ public class RuleBook : MonoBehaviour, IInteractable
     public Vector3 returnRotationOffset = new Vector3(0, 0, 0); // New: Separate offset for the return flight
     public Vector3 returnSpinAxis = new Vector3(1, 0, 0); // Battle Axe Flip (X-axis)
     public float returnSpinSpeed = 1080f;
+
+    [Header("Visuals & Particles")]
+    public GameObject hitParticlePrefab;
+    
+    [Header("Audio")]
+    public AudioClip throwClip;
+    public AudioClip returnClip;
+    public AudioClip hitClip;
+    public AudioClip catchClip;
+    private AudioSource audioSource;
     
     [Header("Contained Rules")]
     public List<BoardRuleInfo> containedRules = new List<BoardRuleInfo>();
@@ -36,6 +46,10 @@ public class RuleBook : MonoBehaviour, IInteractable
     {
         rb = GetComponent<Rigidbody>();
         col = GetComponent<BoxCollider>();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f; // 3D Sound
     }
 
     private void Start()
@@ -75,13 +89,18 @@ public class RuleBook : MonoBehaviour, IInteractable
 
     private Coroutine destroyCoroutine;
 
-    public void OnPickedUp(Transform equipParent)
+    public void OnPickedUp(Transform equipParent, bool wasReturned = false)
     {
         // Cancel the self-destruct timer if caught!
         if (destroyCoroutine != null)
         {
             StopCoroutine(destroyCoroutine);
             destroyCoroutine = null;
+        }
+
+        if (wasReturned)
+        {
+            if (catchClip != null) audioSource.PlayOneShot(catchClip, 0.7f);
         }
 
         isHeld = true;
@@ -140,6 +159,8 @@ public class RuleBook : MonoBehaviour, IInteractable
         rb.isKinematic = false;
         rb.useGravity = false;
         
+        if (throwClip != null) audioSource.PlayOneShot(throwClip, 0.6f);
+
         // Reset all physics states
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
@@ -206,12 +227,27 @@ public class RuleBook : MonoBehaviour, IInteractable
         isSpinning = false;
         rb.constraints = RigidbodyConstraints.None;
         rb.useGravity = true;
+
+        if (hitClip != null && collision.relativeVelocity.magnitude > 2f)
+        {
+            audioSource.PlayOneShot(hitClip, 0.5f);
+        }
+
+        // Spawn impact particle
+        if (hitParticlePrefab != null && collision.contacts.Length > 0)
+        {
+            ContactPoint contact = collision.contacts[0];
+            // Instantiate aligned with the surface normal to prevent 2D clipping
+            GameObject fx = Instantiate(hitParticlePrefab, contact.point, Quaternion.LookRotation(contact.normal));
+            Destroy(fx, 2f); // Cleanup
+        }
     }
 
     public void TriggerReturn()
     {
         if (isReturning || isHeld) return;
         StopAllCoroutines(); 
+        if (returnClip != null) audioSource.PlayOneShot(returnClip, 0.5f);
         StartCoroutine(ReturnSequence(0f));
     }
 
