@@ -27,6 +27,9 @@ public class RuleManager : MonoBehaviour
         new RuleDescriptionEntry { type = RuleType.InvisibleGround, description = "Zemin görünmezdir" }
     };
 
+    [Header("Level Design: Initial State")]
+    public List<RuleType> initialErasedRules = new List<RuleType>();
+
     // Helper to get description at runtime
     public string GetDescription(RuleType type)
     {
@@ -49,6 +52,15 @@ public class RuleManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void Start()
+    {
+        // Apply initial level states
+        foreach (RuleType rule in initialErasedRules)
+        {
+            EraseRule(rule);
+        }
     }
 
     /// <summary>
