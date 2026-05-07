@@ -13,16 +13,13 @@ public class PauseMenuManager : MonoBehaviour
 
     private void Awake()
     {
+        // Simple singleton pattern for the current scene only
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
         Instance = this;
-        
-        // If this script is on the Canvas or a child of it, 
-        // we should make the root Canvas persist
-        DontDestroyOnLoad(transform.root.gameObject);
     }
 
     private void Update()
@@ -89,10 +86,6 @@ public class PauseMenuManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         isPaused = false;
-        
-        // Destroy the persistent UI before going to main menu
-        // so it doesn't double up or conflict with the Main Menu UI
-        Destroy(transform.root.gameObject);
         
         SceneManager.LoadScene("MainMenu");
     }

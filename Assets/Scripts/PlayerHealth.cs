@@ -15,6 +15,7 @@ public class PlayerHealth : MonoBehaviour
 
     [Header("Events")]
     public UnityEvent<float> OnHealthChanged;
+    public UnityEvent<int> OnLivesChanged;
     public UnityEvent OnDeath;
 
     [Header("Audio")]
@@ -26,15 +27,21 @@ public class PlayerHealth : MonoBehaviour
     private PlayerController playerController;
     private float agonyTimer;
 
+    [Header("Lives System")]
+    public int maxLives = 3;
+    public int currentLives;
+    
     private void Start()
     {
         currentHealth = maxHealth;
+        currentLives = maxLives;
         playerController = GetComponent<PlayerController>();
         
         if (healthAudioSource == null) healthAudioSource = GetComponent<AudioSource>();
         if (healthAudioSource == null) healthAudioSource = gameObject.AddComponent<AudioSource>();
         
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
+        OnLivesChanged?.Invoke(currentLives);
     }
 
     private void Update()
@@ -93,12 +100,27 @@ public class PlayerHealth : MonoBehaviour
         if (deathClip != null) healthAudioSource.PlayOneShot(deathClip, 0.8f);
 
         OnDeath?.Invoke();
-        if (playerController != null)
+        
+        currentLives--;
+        OnLivesChanged?.Invoke(currentLives);
+        
+        if (currentLives > 0)
         {
-            playerController.Die();
-            // Reset health on respawn
-            currentHealth = maxHealth;
-            OnHealthChanged?.Invoke(1f);
+            Debug.Log($"[PlayerHealth] Soft Respawn. Lives remaining: {currentLives}");
+            if (playerController != null)
+            {
+                playerController.Die(); // This handles the soft respawn (moving to spawn point)
+                
+                // Reset health on soft respawn
+                currentHealth = maxHealth;
+                OnHealthChanged?.Invoke(1f);
+            }
+        }
+        else
+        {
+            Debug.Log("[PlayerHealth] Game Over for this level. Resetting scene...");
+            // Hard Reset: Reloads the entire scene, wiping all changes and resetting progress for this specific level
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
     }
 }
