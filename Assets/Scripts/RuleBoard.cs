@@ -8,6 +8,7 @@ public class BoardRuleInfo
 {
     public RuleType ruleType;
     public string ruleDescription; // e.g., "Mavi renkli yerde karakter kayar"
+    public bool startsErased;      // NEW: Should this rule start as erased in this level?
 }
 
 public class RuleBoard : MonoBehaviour, IInteractable
@@ -24,9 +25,21 @@ public class RuleBoard : MonoBehaviour, IInteractable
 
     private void Start()
     {
+        // 1. Apply any initial erased states defined on this specific board
+        if (RuleManager.Instance != null)
+        {
+            foreach (var rule in rulesOnThisBoard)
+            {
+                if (rule.startsErased)
+                {
+                    RuleManager.Instance.EraseRule(rule.ruleType);
+                }
+            }
+        }
+
         UpdateTextDisplay();
 
-        // Listen for global rule changes so the board updates if another board erases a rule
+        // 2. Listen for global rule changes so the board updates if another board erases a rule
         if (RuleManager.Instance != null)
         {
             RuleManager.Instance.OnRuleStateChanged += HandleGlobalRuleChange;
@@ -106,9 +119,22 @@ public class RuleBoard : MonoBehaviour, IInteractable
                 int ruleIndex = i;
                 if (ruleIndex < rulesOnThisBoard.Count)
                 {
-                    // Erase or Restore the selected rule globally
+                    // 1. Identify the rule
                     RuleType selectedRule = rulesOnThisBoard[ruleIndex].ruleType;
-                    RuleManager.Instance.ToggleRule(selectedRule);
+
+                    // 2. If it's a LOCAL rule (like BookReturn), only change the held book
+                    if (selectedRule == RuleType.BookReturn)
+                    {
+                        if (interactingPlayer != null && interactingPlayer.heldBook != null)
+                        {
+                            interactingPlayer.heldBook.ToggleRuleLocally(selectedRule);
+                        }
+                    }
+                    else
+                    {
+                        // 3. Otherwise, change it globally for the whole world
+                        RuleManager.Instance.ToggleRule(selectedRule);
+                    }
                     
                     // Release the player after making a choice
                     ReleasePlayer();
@@ -151,7 +177,15 @@ public class RuleBoard : MonoBehaviour, IInteractable
 
             if (RuleManager.Instance != null)
             {
-                isErased = RuleManager.Instance.IsRuleErased(info.ruleType);
+                // If it's a local rule and someone is looking at the board, check their book
+                if (info.ruleType == RuleType.BookReturn && interactingPlayer != null && interactingPlayer.heldBook != null)
+                {
+                    isErased = interactingPlayer.heldBook.IsRuleErased(info.ruleType);
+                }
+                else
+                {
+                    isErased = RuleManager.Instance.IsRuleErased(info.ruleType);
+                }
             }
 
             string ruleText = info.ruleDescription;

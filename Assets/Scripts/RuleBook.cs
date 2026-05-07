@@ -36,6 +36,9 @@ public class RuleBook : MonoBehaviour, IInteractable
     
     [Header("Contained Rules")]
     public List<BoardRuleInfo> containedRules = new List<BoardRuleInfo>();
+    
+    // NEW: Rules that only affect THIS specific book (e.g. BookReturn)
+    private HashSet<RuleType> locallyErasedRules = new HashSet<RuleType>();
 
     private Rigidbody rb;
     private BoxCollider col;
@@ -52,8 +55,63 @@ public class RuleBook : MonoBehaviour, IInteractable
         audioSource.spatialBlend = 1f; // 3D Sound
     }
 
+    /// <summary>
+    /// Checks if a rule is erased. If it's a local rule, checks this book. Otherwise checks RuleManager.
+    /// </summary>
+    public bool IsRuleErased(RuleType type)
+    {
+        if (type == RuleType.BookReturn)
+        {
+            return locallyErasedRules.Contains(type);
+        }
+        
+        return RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(type);
+    }
+
+    public void ToggleRuleLocally(RuleType type)
+    {
+        if (locallyErasedRules.Contains(type))
+            locallyErasedRules.Remove(type);
+        else
+            locallyErasedRules.Add(type);
+            
+        UpdateTextDisplay();
+    }
+
+    public void EraseRuleLocally(RuleType type)
+    {
+        if (!locallyErasedRules.Contains(type))
+        {
+            locallyErasedRules.Add(type);
+            UpdateTextDisplay();
+        }
+    }
+
+    /// <summary>
+    /// Checks if this book even contains this specific rule type.
+    /// </summary>
+    public bool HasRule(RuleType type)
+    {
+        return containedRules.Exists(r => r.ruleType == type);
+    }
+
     private void Start()
     {
+        if (RuleManager.Instance != null)
+        {
+            foreach (var rule in containedRules)
+            {
+                if (rule.startsErased)
+                {
+                    // If it's local, erase it locally. Otherwise, erase it globally.
+                    if (rule.ruleType == RuleType.BookReturn)
+                        locallyErasedRules.Add(rule.ruleType);
+                    else
+                        RuleManager.Instance.EraseRule(rule.ruleType);
+                }
+            }
+        }
+        
         UpdateTextDisplay();
         
         // Listen to global changes just in case a rule changes while we are holding it
@@ -246,6 +304,14 @@ public class RuleBook : MonoBehaviour, IInteractable
     public void TriggerReturn()
     {
         if (isReturning || isHeld) return;
+        
+        // CHECK LOCAL RULE: If BookReturn is erased for THIS book, it won't return!
+        if (IsRuleErased(RuleType.BookReturn))
+        {
+            Debug.Log("[RuleBook] Return rule is erased LOCALLY for this book. Staying put.");
+            return;
+        }
+
         StopAllCoroutines(); 
         if (returnClip != null) audioSource.PlayOneShot(returnClip, 0.5f);
         StartCoroutine(ReturnSequence(0f));

@@ -572,7 +572,16 @@ public class PlayerController : MonoBehaviour
                     
                     if (RuleManager.Instance != null)
                     {
-                        RuleManager.Instance.ToggleRule(ruleToErase);
+                        // IF IT'S LOCAL: Erase it only on THIS book
+                        if (ruleToErase == RuleType.BookReturn)
+                        {
+                            heldBook.EraseRuleLocally(ruleToErase);
+                        }
+                        else
+                        {
+                            // OTHERWISE: Erase it globally for the world
+                            RuleManager.Instance.EraseRule(ruleToErase);
+                        }
                     }
 
                     RuleBook bookToThrow = heldBook;
@@ -630,6 +639,13 @@ public class PlayerController : MonoBehaviour
 
     public void PickUpBook(RuleBook book, bool wasReturned = false)
     {
+        // If it's a returning book but we already have one, tell it to drop
+        if (wasReturned && heldBook != null)
+        {
+            book.OnDropped(); 
+            return;
+        }
+
         if (heldBook != null) DropBook();
         
         heldBook = book;

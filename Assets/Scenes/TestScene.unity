@@ -171,6 +171,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: BookWithReturn (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.data[0].ruleType
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.data[1].ruleType
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.data[0].ruleDescription
+      value: "Kitap sana geri d\xF6ner"
+      objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.data[1].ruleDescription
+      value: "F\u0131rlatt\u0131\u011F\u0131n Kitap sana geri d\xF6ner"
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -857,6 +877,10 @@ PrefabInstance:
       propertyPath: throwForce
       value: 24
       objectReference: {fileID: 0}
+    - target: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+      propertyPath: containedRules.Array.size
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -915,9 +939,37 @@ PrefabInstance:
       value: Button
       objectReference: {fileID: 0}
     - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
       propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 332889321}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnButtonHit
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: BookThrower, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgument
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2647590651539933999, guid: 217a25aa1afd2f44384cffcc3eab915c, type: 3}
+      propertyPath: OnButtonPressed.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -970,6 +1022,14 @@ PrefabInstance:
     - target: {fileID: 2584994159233231051, guid: b0d5485dbc90ea14dae617dc104993d8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2605831302403861549, guid: b0d5485dbc90ea14dae617dc104993d8, type: 3}
+      propertyPath: bookPrefab
+      value: 
+      objectReference: {fileID: 8846482785345649791, guid: 343924e8b4befe34eb7fd4b40a384e96, type: 3}
+    - target: {fileID: 2605831302403861549, guid: b0d5485dbc90ea14dae617dc104993d8, type: 3}
+      propertyPath: dispenseForce
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 2903377085759965351, guid: b0d5485dbc90ea14dae617dc104993d8, type: 3}
       propertyPath: m_Name
@@ -1223,6 +1283,46 @@ PrefabInstance:
     - target: {fileID: 2654569388805725686, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.size
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[1].type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[2].type
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[3].type
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[4].type
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[0].description
+      value: "Mavi zemin kaygand\u0131r sonsuza akdar kayars\u0131n"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[1].description
+      value: "Ye\u015Fil zeminin i\xE7inden ge\xE7ersin"
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[2].description
+      value: "Kitap Eline D\xF6ner."
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[3].description
+      value: "K\u0131rm\u0131z\u0131 zemin hasar verir ve seni z\u0131plat\u0131r."
+      objectReference: {fileID: 0}
+    - target: {fileID: 6981094548428713922, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
+      propertyPath: ruleDescriptions.Array.data[4].description
+      value: "Beyaz Zemin yok g\xF6remezsin."
       objectReference: {fileID: 0}
     - target: {fileID: 7898401500421554933, guid: f13aa9337e3426e4a8198a5819a1fcb6, type: 3}
       propertyPath: m_Name
