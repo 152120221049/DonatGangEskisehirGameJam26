@@ -357,7 +357,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 100
   currentHealth: 0
-  invincibilityDuration: 1
+  invincibilityDuration: 0.5
   damageSlowdownMultiplier: 0.5
   damageSlowdownDuration: 0.3
   OnHealthChanged:
