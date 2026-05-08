@@ -64,6 +64,8 @@ public class RuleManager : MonoBehaviour
     /// </summary>
     public void ToggleRule(RuleType rule)
     {
+        bool isErasing = !erasedRules.Contains(rule);
+        
         if (erasedRules.Contains(rule))
         {
             RestoreRule(rule);
@@ -72,6 +74,8 @@ public class RuleManager : MonoBehaviour
         {
             EraseRule(rule);
         }
+
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayRuleChanged(isErasing);
     }
 
     public void EraseRule(RuleType rule)

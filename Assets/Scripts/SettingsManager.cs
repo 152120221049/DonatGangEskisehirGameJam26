@@ -13,7 +13,6 @@ public class SettingsManager : MonoBehaviour
 
     [Header("UI Panels")]
     public GameObject settingsPanel;
-    public GameObject creditsPanel;
 
     [Header("Gameplay")]
     public Slider sensitivitySlider;
@@ -47,17 +46,7 @@ public class SettingsManager : MonoBehaviour
         PlayerPrefs.SetFloat("SFXVolume", volume);
     }
 
-    public void OpenCredits()
-    {
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        if (creditsPanel != null) creditsPanel.SetActive(true);
-    }
 
-    public void CloseCredits()
-    {
-        if (creditsPanel != null) creditsPanel.SetActive(false);
-        // This usually returns to Main Menu, so MainMenuManager will handle the panel swap
-    }
 
     public void SetSensitivity(float sens)
     {
@@ -131,5 +120,14 @@ public class SettingsManager : MonoBehaviour
     public void SaveAndExit()
     {
         PlayerPrefs.Save();
+        CloseSettings();
+    }
+
+    public void CloseSettings()
+    {
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(false);
+        }
     }
 }

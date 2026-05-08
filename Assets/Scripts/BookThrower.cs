@@ -13,32 +13,39 @@ public class BookThrower : MonoBehaviour
     /// <param name="hitSource">The object that hit the button.</param>
     public void OnButtonHit(GameObject hitSource)
     {
-        Debug.Log($"[BookThrower] Button hit by: {hitSource.name}");
+        if (hitSource == null) return;
+        
         RuleBook hitBook = hitSource.GetComponentInParent<RuleBook>();
+        bool newBookShouldReturn = true;
 
         if (hitBook != null)
         {
-            if (RuleManager.Instance != null && RuleManager.Instance.IsRuleErased(RuleType.BookReturn))
+            // If the book DOESN'T have the rule, or HAS it but it's erased... it's "Broken"
+            if (!hitBook.HasRule(RuleType.BookReturn) || hitBook.IsRuleErased(RuleType.BookReturn))
             {
-                Debug.Log("[BookThrower] Rule Erased! Book will NOT return.");
-                // We do nothing. The book stays where it is because the return rule is disabled.
+                Debug.Log($"[BookThrower] Sacrifice accepted ({hitSource.name}). Consuming and dispensing chaser.");
+                newBookShouldReturn = true;
+                
+                // Use a tiny delay to let physics finish before destroying
+                Destroy(hitBook.gameObject, 0.02f);
             }
             else
             {
-                // Scenario: Normal hit, trigger return of the existing book
-                Debug.Log("[BookThrower] Normal hit! Triggering return of the thrown book.");
+                Debug.Log($"[BookThrower] Returning book hit ({hitSource.name}). New book stays.");
                 hitBook.TriggerReturn();
+                newBookShouldReturn = false;
             }
         }
         else
         {
-            // Hit by anything else (player, box, etc)
-            Debug.Log("[BookThrower] Not a book. Dispensing new book...");
-            DispenseNewBook();
+            Debug.Log($"[BookThrower] Non-book hit ({hitSource.name}). Dispensing default.");
+            newBookShouldReturn = true;
         }
+
+        DispenseNewBook(newBookShouldReturn);
     }
 
-    public void DispenseNewBook()
+    public void DispenseNewBook(bool shouldChasePlayer = false)
     {
         if (bookPrefab == null || spawnPoint == null)
         {
@@ -53,6 +60,11 @@ public class BookThrower : MonoBehaviour
         if (rb != null)
         {
             rb.AddForce(spawnPoint.forward * dispenseForce, ForceMode.Impulse);
+        }
+        
+        if (shouldChasePlayer)
+        {
+            newBook.TriggerReturn();
         }
         
         Debug.Log("[BookThrower] Dispensed new book.");

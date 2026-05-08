@@ -15,21 +15,50 @@ public class PlayerHealth : MonoBehaviour
 
     [Header("Events")]
     public UnityEvent<float> OnHealthChanged;
+    public UnityEvent<int> OnLivesChanged;
     public UnityEvent OnDeath;
 
+    [Header("Audio")]
+    public AudioSource healthAudioSource;
+    public AudioClip damageClip;
+    public AudioClip agonyClip;
+    public AudioClip deathClip;
+    
     private PlayerController playerController;
+    private float agonyTimer;
 
+    [Header("Lives System")]
+    public int maxLives = 3;
+    public int currentLives;
+    
     private void Start()
     {
         currentHealth = maxHealth;
+        currentLives = maxLives;
         playerController = GetComponent<PlayerController>();
+        
+        if (healthAudioSource == null) healthAudioSource = GetComponent<AudioSource>();
+        if (healthAudioSource == null) healthAudioSource = gameObject.AddComponent<AudioSource>();
+        
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
+        OnLivesChanged?.Invoke(currentLives);
     }
 
     private void Update()
     {
         if (invincibilityTimer > 0)
             invincibilityTimer -= Time.deltaTime;
+
+        // Agony sound when low health
+        if (currentHealth > 0 && currentHealth < maxHealth * 0.3f)
+        {
+            agonyTimer -= Time.deltaTime;
+            if (agonyTimer <= 0)
+            {
+                if (agonyClip != null) healthAudioSource.PlayOneShot(agonyClip, 0.6f);
+                agonyTimer = 2.5f; // Play every 2.5s
+            }
+        }
     }
 
     public bool TakeDamage(float amount)
@@ -41,6 +70,8 @@ public class PlayerHealth : MonoBehaviour
 
         Debug.Log($"[PlayerHealth] Took damage: {amount}. Current health: {currentHealth}");
         
+        if (damageClip != null) healthAudioSource.PlayOneShot(damageClip, 0.5f);
+
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
 
         // Slow down the player
@@ -63,16 +94,40 @@ public class PlayerHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
-    private void Die()
+    private bool isDead = false;
+
+    public void Die(bool instant = false)
     {
+        if (isDead) return;
+        isDead = true;
+
         Debug.Log("[PlayerHealth] Player Died!");
+        if (deathClip != null) healthAudioSource.PlayOneShot(deathClip, 0.8f);
+
         OnDeath?.Invoke();
-        if (playerController != null)
+        
+        currentLives--;
+        OnLivesChanged?.Invoke(currentLives);
+        
+        if (currentLives > 0)
         {
-            playerController.Die();
-            // Reset health on respawn
-            currentHealth = maxHealth;
-            OnHealthChanged?.Invoke(1f);
+            Debug.Log($"[PlayerHealth] Soft Respawn. Lives remaining: {currentLives}");
+            if (playerController != null)
+            {
+                playerController.Die(instant); // Pass the instant flag down
+                
+                // Reset health on soft respawn
+                currentHealth = maxHealth;
+                OnHealthChanged?.Invoke(1f);
+                
+                isDead = false;
+            }
+        }
+        else
+        {
+            Debug.Log("[PlayerHealth] Game Over for this level. Resetting scene...");
+            // Hard Reset: Reloads the entire scene, wiping all changes and resetting progress for this specific level
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
     }
 }

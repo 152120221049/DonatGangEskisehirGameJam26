@@ -2,9 +2,8 @@ using UnityEngine;
 
 public class HotGroundRule : GroundRule
 {
-    [Header("Damage Settings")]
-    public float damagePerSecond = 20f;
-    public float damageJumpForce = 4f;
+    public float damagePerHit = 15f;
+    public float damageJumpForce = 12f;
 
     protected override void ApplyActiveState()
     {
@@ -25,7 +24,7 @@ public class HotGroundRule : GroundRule
             PlayerHealth health = collision.gameObject.GetComponent<PlayerHealth>();
             if (health != null)
             {
-                if (health.TakeDamage(damagePerSecond * Time.deltaTime))
+                if (health.TakeDamage(damagePerHit))
                 {
                     // If damage was actually dealt (not invincible), make them jump a little
                     PlayerController pc = collision.gameObject.GetComponent<PlayerController>();
@@ -42,7 +41,7 @@ public class HotGroundRule : GroundRule
             PlayerHealth health = other.gameObject.GetComponent<PlayerHealth>();
             if (health != null)
             {
-                if (health.TakeDamage(damagePerSecond * Time.deltaTime))
+                if (health.TakeDamage(damagePerHit))
                 {
                     PlayerController pc = other.gameObject.GetComponent<PlayerController>();
                     if (pc != null) pc.ApplyKnockback(Vector3.up * damageJumpForce);
