@@ -114,13 +114,14 @@ public class PlayerHealth : MonoBehaviour
             Debug.Log($"[PlayerHealth] Soft Respawn. Lives remaining: {currentLives}");
             if (playerController != null)
             {
-                playerController.Die(instant); // Pass the instant flag down
+                playerController.Die(instant); // This handles the soft respawn (moving to spawn point)
                 
-                // Reset health on soft respawn
-                currentHealth = maxHealth;
-                OnHealthChanged?.Invoke(1f);
-                
-                isDead = false;
+                // If the death is instant (like a kill box), we unlock health immediately.
+                // Otherwise, PlayerController will call RespawnComplete() when the 1.5s animation finishes.
+                if (instant)
+                {
+                    RespawnComplete();
+                }
             }
         }
         else
@@ -129,5 +130,14 @@ public class PlayerHealth : MonoBehaviour
             // Hard Reset: Reloads the entire scene, wiping all changes and resetting progress for this specific level
             UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
+    }
+
+    public void RespawnComplete()
+    {
+        // Reset health on soft respawn
+        currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(1f);
+        
+        isDead = false;
     }
 }

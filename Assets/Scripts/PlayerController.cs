@@ -747,6 +747,9 @@ public class PlayerController : MonoBehaviour
         transform.position = currentSpawnPoint;
         transform.rotation = startRot; // Reset rotation
         isDead = false;
+        
+        // Tell health system we are fully respawned and can take damage again
+        GetComponent<PlayerHealth>()?.RespawnComplete();
     }
 
     private void OnDrawGizmosSelected()
