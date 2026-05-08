@@ -5,6 +5,14 @@ public class HotGroundRule : GroundRule
     public float damagePerHit = 15f;
     public float damageJumpForce = 12f;
 
+    protected override void Start()
+    {
+        // Ensure default RuleType is set if the user forgot to change the dropdown
+        if (ruleType == default) ruleType = RuleType.HotGround;
+        
+        base.Start();
+    }
+
     protected override void ApplyActiveState()
     {
         // Ground is hot (damage active)
