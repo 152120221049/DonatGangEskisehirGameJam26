@@ -72,14 +72,12 @@ public class PauseMenuManager : MonoBehaviour
 
     public void OpenSettings()
     {
-        pauseMenuPanel.SetActive(false);
         settingsPanel.SetActive(true);
     }
 
     public void CloseSettings()
     {
         settingsPanel.SetActive(false);
-        pauseMenuPanel.SetActive(true);
     }
 
     public void LoadMainMenu()

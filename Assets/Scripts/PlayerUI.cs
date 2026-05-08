@@ -8,8 +8,8 @@ public class PlayerUI : MonoBehaviour
     public Slider healthSlider;
     public Image livesImage;
     
-    [Header("Life Sprites (Index = Number of Lives)")]
-    [Tooltip("Size 4: Index 0=0 lives, Index 1=1 life, Index 2=2 lives, Index 3=3 lives")]
+    [Header("Life Sprites (Size 3)")]
+    [Tooltip("Element 0 = 1 life left, Element 1 = 2 lives left, Element 2 = 3 lives left")]
     public Sprite[] lifeSprites;
     
     [Header("Player Reference")]
@@ -59,10 +59,10 @@ public class PlayerUI : MonoBehaviour
     /// </summary>
     public void UpdateLivesDisplay(int lives)
     {
-        if (livesImage != null && lifeSprites != null)
+        if (livesImage != null && lifeSprites != null && lifeSprites.Length > 0)
         {
-            // Ensure we don't go out of bounds (clamp lives between 0 and the max index of the array)
-            int index = Mathf.Clamp(lives, 0, lifeSprites.Length - 1);
+            // Since arrays start at 0, 1 life = index 0, 2 lives = index 1, 3 lives = index 2.
+            int index = Mathf.Clamp(lives - 1, 0, lifeSprites.Length - 1);
             
             if (lifeSprites[index] != null)
             {

@@ -7,10 +7,23 @@ public class KillBox : MonoBehaviour
         // Check if the object entering the trigger is the player
         if (other.CompareTag("Player"))
         {
-            PlayerController player = other.GetComponent<PlayerController>();
-            if (player != null)
+            PlayerHealth health = other.GetComponent<PlayerHealth>();
+            if (health != null)
             {
-                player.Die();
+                health.Die(true);
+            }
+        }
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Fallback in case "Is Trigger" is accidentally unchecked
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            PlayerHealth health = collision.gameObject.GetComponent<PlayerHealth>();
+            if (health != null)
+            {
+                health.Die();
             }
         }
     }

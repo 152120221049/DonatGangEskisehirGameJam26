@@ -51,14 +51,12 @@ public class MainMenuManager : MonoBehaviour
 
     public void OpenSettings()
     {
-        mainMenuPanel.SetActive(false);
         settingsPanel.SetActive(true);
     }
 
     public void CloseSettings()
     {
         settingsPanel.SetActive(false);
-        mainMenuPanel.SetActive(true);
     }
 
 

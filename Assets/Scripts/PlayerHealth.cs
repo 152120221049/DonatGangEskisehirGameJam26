@@ -94,8 +94,13 @@ public class PlayerHealth : MonoBehaviour
         OnHealthChanged?.Invoke(currentHealth / maxHealth);
     }
 
-    private void Die()
+    private bool isDead = false;
+
+    public void Die(bool instant = false)
     {
+        if (isDead) return;
+        isDead = true;
+
         Debug.Log("[PlayerHealth] Player Died!");
         if (deathClip != null) healthAudioSource.PlayOneShot(deathClip, 0.8f);
 
@@ -109,11 +114,13 @@ public class PlayerHealth : MonoBehaviour
             Debug.Log($"[PlayerHealth] Soft Respawn. Lives remaining: {currentLives}");
             if (playerController != null)
             {
-                playerController.Die(); // This handles the soft respawn (moving to spawn point)
+                playerController.Die(instant); // Pass the instant flag down
                 
                 // Reset health on soft respawn
                 currentHealth = maxHealth;
                 OnHealthChanged?.Invoke(1f);
+                
+                isDead = false;
             }
         }
         else

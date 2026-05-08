@@ -120,5 +120,14 @@ public class SettingsManager : MonoBehaviour
     public void SaveAndExit()
     {
         PlayerPrefs.Save();
+        CloseSettings();
+    }
+
+    public void CloseSettings()
+    {
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(false);
+        }
     }
 }
