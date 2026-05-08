@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -102,3 +103,4 @@ public class ReplaceObjectsTool : EditorWindow
         Debug.Log("[ReplaceTool] Successfully swapped " + count + " objects in the scene.");
     }
 }
+#endif

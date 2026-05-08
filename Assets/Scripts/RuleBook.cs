@@ -305,7 +305,13 @@ public class RuleBook : MonoBehaviour, IInteractable
     {
         if (isReturning || isHeld) return;
         
-        // CHECK LOCAL RULE: If BookReturn is erased for THIS book, it won't return!
+        // CHECK 1: Does this book even have the return rule?
+        if (!HasRule(RuleType.BookReturn))
+        {
+            return; // Normal book, does not return.
+        }
+
+        // CHECK 2: Is the rule locally erased for this book?
         if (IsRuleErased(RuleType.BookReturn))
         {
             Debug.Log("[RuleBook] Return rule is erased LOCALLY for this book. Staying put.");
