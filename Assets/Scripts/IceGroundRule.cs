@@ -39,9 +39,9 @@ public class IceGroundRule : GroundRule
 
     protected override void ApplyErasedState()
     {
-        if (col != null && normalMaterial != null)
+        if (col != null)
         {
-            col.sharedMaterial = normalMaterial;
+            col.sharedMaterial = normalMaterial; // If normalMaterial is null, this removes the slippery effect
         }
         if (meshRenderer != null && normalVisual != null)
         {
