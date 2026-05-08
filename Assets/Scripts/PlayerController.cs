@@ -100,6 +100,11 @@ public class PlayerController : MonoBehaviour
     public float mouseSensitivity = 2f;
     private float xRotation = 0f;
 
+    public void UpdateSensitivity(float newSens)
+    {
+        mouseSensitivity = newSens;
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();

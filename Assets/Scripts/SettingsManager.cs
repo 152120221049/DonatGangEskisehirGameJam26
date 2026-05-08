@@ -50,7 +50,16 @@ public class SettingsManager : MonoBehaviour
 
     public void SetSensitivity(float sens)
     {
-        PlayerPrefs.SetFloat("MouseSensitivity", sens);
+        // Clamp the sensitivity to prevent it from being set to 0 (which locks the mouse)
+        float clampedSens = Mathf.Clamp(sens, 0.1f, 10f);
+        PlayerPrefs.SetFloat("MouseSensitivity", clampedSens);
+        
+        // Find the player and apply it instantaneously so you don't have to restart
+        PlayerController player = Object.FindFirstObjectByType<PlayerController>();
+        if (player != null)
+        {
+            player.UpdateSensitivity(clampedSens);
+        }
     }
 
     public void SetQuality(int qualityIndex)
