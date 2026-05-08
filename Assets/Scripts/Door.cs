@@ -6,6 +6,7 @@ public class Door : MonoBehaviour, IInteractable
 {
     [Header("Door Settings")]
     public float openSpeed = 2f;
+    public GameObject openParticlePrefab;
     
     [Header("Audio")]
     public AudioClip openClip;
@@ -45,6 +46,18 @@ public class Door : MonoBehaviour, IInteractable
         
         // Target position is straight up, exactly the height of the door
         Vector3 endPos = startPos + Vector3.up * doorHeight;
+        
+        // Spawn the particle effect at the ground level (bottom of the collider)
+        if (openParticlePrefab != null)
+        {
+            Vector3 groundLevelPos = new Vector3(startPos.x, GetComponent<Collider>().bounds.min.y, startPos.z);
+            GameObject fx = Instantiate(openParticlePrefab, groundLevelPos, Quaternion.identity);
+            
+            // Scale the particle to match the door's width/depth (ignoring the door's height if you want the dust flat, or just copy full scale)
+            fx.transform.localScale = transform.localScale;
+            
+            Destroy(fx, 4f); // Auto cleanup after 4 seconds
+        }
         
         if (openClip != null) audioSource.PlayOneShot(openClip);
         if (rockSlideClip != null)
