@@ -8,7 +8,7 @@ public class BoardRuleInfo
 {
     public RuleType ruleType;
     public string ruleDescription; // e.g., "Mavi renkli yerde karakter kayar"
-    public bool startsErased;      // NEW: Should this rule start as erased in this level?
+    public bool startsErased;
 }
 
 public class RuleBoard : MonoBehaviour, IInteractable
@@ -25,21 +25,9 @@ public class RuleBoard : MonoBehaviour, IInteractable
 
     private void Start()
     {
-        // 1. Apply any initial erased states defined on this specific board
-        if (RuleManager.Instance != null)
-        {
-            foreach (var rule in rulesOnThisBoard)
-            {
-                if (rule.startsErased)
-                {
-                    RuleManager.Instance.EraseRule(rule.ruleType);
-                }
-            }
-        }
-
         UpdateTextDisplay();
 
-        // 2. Listen for global rule changes so the board updates if another board erases a rule
+        // Listen for global rule changes so the board updates if another board erases a rule
         if (RuleManager.Instance != null)
         {
             RuleManager.Instance.OnRuleStateChanged += HandleGlobalRuleChange;
@@ -119,22 +107,9 @@ public class RuleBoard : MonoBehaviour, IInteractable
                 int ruleIndex = i;
                 if (ruleIndex < rulesOnThisBoard.Count)
                 {
-                    // 1. Identify the rule
+                    // Erase or Restore the selected rule globally
                     RuleType selectedRule = rulesOnThisBoard[ruleIndex].ruleType;
-
-                    // 2. If it's a LOCAL rule (like BookReturn), only change the held book
-                    if (selectedRule == RuleType.BookReturn)
-                    {
-                        if (interactingPlayer != null && interactingPlayer.heldBook != null)
-                        {
-                            interactingPlayer.heldBook.ToggleRuleLocally(selectedRule);
-                        }
-                    }
-                    else
-                    {
-                        // 3. Otherwise, change it globally for the whole world
-                        RuleManager.Instance.ToggleRule(selectedRule);
-                    }
+                    RuleManager.Instance.ToggleRule(selectedRule);
                     
                     // Release the player after making a choice
                     ReleasePlayer();
@@ -159,11 +134,11 @@ public class RuleBoard : MonoBehaviour, IInteractable
         if (textDisplay == null) return;
 
         // Rich text for the title (Gold, bold, slightly larger)
-        string fullText = $"<size=120%><b><color=#FFD700>{boardTitle}</color></b></size>\n<line-height=120%>";
+        string fullText = $"<size=120%><b><color=#000000>{boardTitle}</color></b></size>\n<line-height=120%>";
 
         if (isPlayerInteracting)
         {
-            fullText += "<color=#00FFFF><i>[ Silmek ve Yenilemek için Kural Seç ]</i></color>\n\n";
+            fullText += "<color=#000000><i>[ Silmek istediğin Kuralı Seç ]</i></color>\n\n";
         }
         else
         {
@@ -177,15 +152,7 @@ public class RuleBoard : MonoBehaviour, IInteractable
 
             if (RuleManager.Instance != null)
             {
-                // If it's a local rule and someone is looking at the board, check their book
-                if (info.ruleType == RuleType.BookReturn && interactingPlayer != null && interactingPlayer.heldBook != null)
-                {
-                    isErased = interactingPlayer.heldBook.IsRuleErased(info.ruleType);
-                }
-                else
-                {
-                    isErased = RuleManager.Instance.IsRuleErased(info.ruleType);
-                }
+                isErased = RuleManager.Instance.IsRuleErased(info.ruleType);
             }
 
             string ruleText = info.ruleDescription;
@@ -195,11 +162,11 @@ public class RuleBoard : MonoBehaviour, IInteractable
                 // Erased State: Red when interacting, Grey when just looking
                 if (isPlayerInteracting)
                 {
-                    fullText += $"<color=#FF5555><b>[{i + 1}]</b> <s>{ruleText}</s></color>\n";
+                    fullText += $"<color=#000000><b>[{i + 1}]</b> <s>{ruleText}</s></color>\n";
                 }
                 else
                 {
-                    fullText += $"<color=#888888><s>- {ruleText}</s></color>\n";
+                    fullText += $"<color=#000000><s>- {ruleText}</s></color>\n";
                 }
             }
             else
@@ -207,11 +174,11 @@ public class RuleBoard : MonoBehaviour, IInteractable
                 // Active State: Green when interacting, White when just looking
                 if (isPlayerInteracting)
                 {
-                    fullText += $"<color=#55FF55><b>[{i + 1}]</b> {ruleText}</color>\n";
+                    fullText += $"<color=#000000><b>[{i + 1}]</b> {ruleText}</color>\n";
                 }
                 else
                 {
-                    fullText += $"<color=#FFFFFF>- {ruleText}</color>\n";
+                    fullText += $"<color=#000000>- {ruleText}</color>\n";
                 }
             }
         }
