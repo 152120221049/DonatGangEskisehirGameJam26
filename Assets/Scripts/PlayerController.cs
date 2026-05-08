@@ -262,8 +262,22 @@ public class PlayerController : MonoBehaviour
                 footstepTimer -= Time.fixedDeltaTime * (horizontalSpeed / walkSpeed);
                 if (footstepTimer <= 0)
                 {
-                    if (footstepClip != null) playerAudioSource.PlayOneShot(footstepClip, 0.3f);
+                    if (footstepClip != null) 
+                    {
+                        playerAudioSource.clip = footstepClip;
+                        playerAudioSource.volume = 0.3f;
+                        playerAudioSource.Play();
+                    }
                     footstepTimer = footstepRate;
+                }
+            }
+            else
+            {
+                // Instantly cut off the footstep sound if we stop moving
+                if (playerAudioSource.clip == footstepClip && playerAudioSource.isPlaying)
+                {
+                    playerAudioSource.Stop();
+                    playerAudioSource.clip = null; 
                 }
             }
         }
