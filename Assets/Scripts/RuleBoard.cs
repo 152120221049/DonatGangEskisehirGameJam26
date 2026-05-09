@@ -32,6 +32,8 @@ public class RuleBoard : MonoBehaviour, IInteractable
         {
             RuleManager.Instance.OnRuleStateChanged += HandleGlobalRuleChange;
         }
+        
+      
     }
 
     private void OnDestroy()
